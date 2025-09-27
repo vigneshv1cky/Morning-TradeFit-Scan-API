@@ -161,7 +161,7 @@ services:
       mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci
     volumes:
       - mysql_data:/var/lib/mysql
-    healthcheck:
+    your_psychologycheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "username", "-ppassword"]
       interval: 10s
       timeout: 5s

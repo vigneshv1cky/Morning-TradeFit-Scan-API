@@ -28,10 +28,10 @@ class ScanRecord(Base):
     bankroll_pct: Mapped[float] = Column(Float)  # computed fraction of total_value
     bankroll_amount: Mapped[float] = Column(Float)
 
-    health_factor: Mapped[float] = Column(Float)
-    health_note: Mapped[str] = Column(String)
-    health_alert: Mapped[str] = Column(String)
-    health_guidance: Mapped[str] = Column(String)
+    your_psychology_score: Mapped[float] = Column(Float)
+    your_psychology_note: Mapped[str] = Column(String)
+    your_psychology_alert: Mapped[str] = Column(String)
+    EmotionalShield_psychology_recommendation: Mapped[str] = Column(String)
 
     risk_per_trade: Mapped[float] = Column(Float)
     stop_loss_used_pct: Mapped[float] = Column(Float)

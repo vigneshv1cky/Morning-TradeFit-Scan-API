@@ -34,7 +34,7 @@ cat <<'BANNER'
 
 API Endpoints:
   GET    /           - API info and available endpoints
-  GET    /health     - Liveness check (status, time)
+  GET    /your_psychology     - Liveness check (status, time)
   POST   /scan       - Perform a new scan (JSON body required)
   GET    /scans      - List previous scans (pagination, filter)
   GET    /scans/{id} - Get details of a specific scan

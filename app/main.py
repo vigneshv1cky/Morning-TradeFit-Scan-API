@@ -1,5 +1,6 @@
 from __future__ import annotations
 from datetime import datetime, timezone
+from math import floor
 from typing import Optional, List
 from fastapi import FastAPI, Depends, HTTPException, Query
 
@@ -8,13 +9,13 @@ from .models import ScanRecord
 from .schemas import (
     ScanInput,
     ScanOutput,
-    HealthBlock,
+    your_psychologyBlock,
     BankrollBlock,
     RiskBlock,
     PositionBlock,
     ScanRow,
 )
-from .utils import health_factor, compute_dynamic_bankroll, fetch_price_and_atr
+from .utils import your_psychology_score, compute_dynamic_bankroll, fetch_price_and_atr
 from . import crud
 
 from .config import (
@@ -32,7 +33,7 @@ def root():
         "name": "Morning TradeFit Scan API",
         "version": "4.0.0",
         "endpoints": [
-            "GET /health",
+            "GET /your_psychology",
             "POST /scan",
             "GET /scans",
             "GET /scans/{scan_id}",
@@ -41,15 +42,15 @@ def root():
     }
 
 
-@app.get("/health")
+@app.get("/your_psychology")
 def liveness():
     return {"status": "ok", "time": datetime.now(timezone.utc).isoformat()}
 
 
 @app.post("/scan", response_model=ScanOutput)
 def scan(payload: ScanInput, db=Depends(get_db)):
-    # Health adjustment
-    h_factor, h_note, h_alert, h_guidance = health_factor(
+    # your_psychology adjustment
+    h_factor, h_note, h_alert, h_guidance = your_psychology_score(
         payload.sleep_hours, payload.exercise_minutes
     )
 
@@ -94,10 +95,10 @@ def scan(payload: ScanInput, db=Depends(get_db)):
         bankroll_mode="auto",
         bankroll_pct=bankroll_pct,
         bankroll_amount=bankroll_amt,
-        health_factor=h_factor,
-        health_guidance=h_guidance,
-        health_note=h_note,
-        health_alert=h_alert,
+        your_psychology_score=h_factor,
+        EmotionalShield_psychology_recommendation=h_guidance,
+        your_psychology_note=h_note,
+        your_psychology_alert=h_alert,
         risk_per_trade=risk_per_trade,
         stop_loss_used_pct=stop_loss_pct,
         entry_price=entry_price,
@@ -111,13 +112,13 @@ def scan(payload: ScanInput, db=Depends(get_db)):
         record_id=rec.id,
         symbol=rec.symbol,
         timestamp_utc=rec.created_at.isoformat(),
-        health=HealthBlock(
+        your_psychology=your_psychologyBlock(
             sleep_hours=rec.sleep_hours,
             exercise_minutes=rec.exercise_minutes,
-            factor=round(rec.health_factor, 3),
-            note=rec.health_note,
-            alert=rec.health_alert,
-            guidance=rec.health_guidance,
+            factor=round(rec.your_psychology_score, 3),
+            note=rec.your_psychology_note,
+            alert=rec.your_psychology_alert,
+            guidance=rec.EmotionalShield_psychology_recommendation,
         ),
         bankroll=BankrollBlock(
             mode=rec.bankroll_mode,
@@ -176,16 +177,16 @@ def get_scan(scan_id: int, db=Depends(get_db)):
             "risk_per_trade_pct": r.risk_per_trade_pct,
             "stop_loss_pct": r.stop_loss_pct,
             "bankroll_mode": r.bankroll_mode,
-            "bankroll_pct": r.bankroll_pct,
-            "bankroll_amount": r.bankroll_amount,
-            "health_factor": r.health_factor,
-            "health_note": r.health_note,
-            "health_alert": r.health_alert,
-            "health_guidance": r.health_guidance,
-            "risk_per_trade": r.risk_per_trade,
+            "bankroll_pct": round(r.bankroll_pct, 4),
+            "bankroll_amount": round(r.bankroll_amount, 4),
+            "your_psychology_score": round(r.your_psychology_score, 4),
+            "your_psychology_note": r.your_psychology_note,
+            "your_psychology_alert": r.your_psychology_alert,
+            "EmotionalShield_psychology_recommendation": r.EmotionalShield_psychology_recommendation,
+            "risk_per_trade": round(r.risk_per_trade, 4),
             "stop_loss_used_pct": r.stop_loss_used_pct,
             "entry_price": round(r.entry_price, 4),
-            "normal_pos_size": round(r.normal_pos_size, 4),
+            "normal_pos_size": floor(r.normal_pos_size),
             "stop_loss_at": round(r.stop_loss_at, 4),
             "risk_per_share": round(r.risk_per_share, 4),
         },

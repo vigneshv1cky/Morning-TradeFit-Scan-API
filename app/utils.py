@@ -1,9 +1,10 @@
 from __future__ import annotations
 from typing import Optional
+import math
 import numpy as np
 from .config import (
     BANKROLL_BASE_PCT,
-    BANKROLL_HEALTH_SCALE,
+    BANKROLL_your_psychology_SCALE,
 )
 
 try:
@@ -14,86 +15,106 @@ except Exception:
     _HAS_YF = False
 
 
-# --- Health & bankroll ---
-def health_factor(sleep_hours: float, exercise_minutes: int) -> tuple[float, str, str]:
-    # --- Sleep score ---
-    if sleep_hours >= 7:
-        s, s_note = 1.0, "Good Sleep"
-    elif 5 <= sleep_hours < 7:
-        s, s_note = 0.5, "Moderate Sleep"
-    else:  # < 5
-        s, s_note = 0.2, "Poor Sleep"
+# --- your_psychology & bankroll ---
+def your_psychology_score(
+    sleep_hours: float, exercise_minutes: int
+) -> tuple[float, str, str, str]:
+    """
+    Compute risk factor using exponential penalty on deficits from targets.
 
-    # --- Exercise score ---
-    if exercise_minutes < 60:
-        e, e_note = 0.2, "Poor Exercise"
-    elif 60 <= exercise_minutes < 90:
-        e, e_note = 0.5, "Moderate Exercise"
-    else:  # 90+
-        e, e_note = 1.0, "Good Exercise"
+    - Sleep target: 7h (5–7h ramp).
+    - Exercise target: 90m (60–90m ramp).
+    - Weighted: sleep 65%, exercise 35%.
+    - Output f scaled into [0.2, 1.0].
+    """
 
-    # --- Combine into category ---
+    # --- Sleep score with richer notes ---
+    if sleep_hours >= 6:
+        s_note = "Well-rested"
+    elif 4 <= sleep_hours < 6:
+        s_note = "Light rest"
+    else:
+        s_note = "Sleep-deprived"
+
+    # --- Exercise score with richer notes ---
+    if exercise_minutes < 20:
+        e_note = "Inactive"
+    elif 20 <= exercise_minutes < 40:
+        e_note = "Moderate activity"
+    else:
+        e_note = "High activity"
+
     sleep_level = s_note
     exercise_level = e_note
 
-    # --- Risk matrix ---
+    # --- Risk matrix (descriptions tuned) ---
     risk_matrix = {
-        "Poor Sleep": {
-            "Poor Exercise": (
+        "Sleep-deprived": {
+            "Inactive": (
                 "🔴 High Risk",
-                "Judgment impaired, stress high, discipline weak — avoid trading.",
+                "Severe fatigue and inactivity — judgment, focus, and discipline highly compromised.",
             ),
-            "Moderate Exercise": (
+            "Moderate activity": (
                 "🔴 High Risk",
-                "Some physical balance, but fatigue dominates — high chance of costly mistakes.",
+                "Exercise provides some balance, but lack of sleep dominates — high chance of costly mistakes.",
             ),
-            "Good Exercise": (
-                "🟠 Elevated Risk",
-                "Good fitness helps, but poor rest still limits focus.",
+            "High activity": (
+                "🔴 High Risk",
+                "Strong fitness helps, but poor rest still limits focus and reaction time.",
             ),
         },
-        "Moderate Sleep": {
-            "Poor Exercise": (
+        "Light rest": {
+            "Inactive": (
                 "🔴 High Risk",
-                "Partial rest + inactivity = sluggish, reactive trading.",
+                "Partial rest + inactivity → sluggish responses, reactive decision-making.",
             ),
-            "Moderate Exercise": (
+            "Moderate activity": (
                 "🟠 Moderate Risk",
-                "Fair balance, but not peak performance — trade smaller size.",
+                "Fair balance, but not peak performance — reduce trade size and frequency.",
             ),
-            "Good Exercise": (
+            "High activity": (
                 "🟡 Caution",
-                "Reasonable discipline, but not optimal endurance.",
+                "Reasonable discipline, but endurance may fade in longer sessions.",
             ),
         },
-        "Good Sleep": {
-            "Poor Exercise": (
+        "Well-rested": {
+            "Inactive": (
                 "🟠 Moderate Risk",
-                "Rested mind, but low fitness = shorter stamina in volatile sessions.",
+                "Mind is sharp, but low fitness = reduced stamina in volatile markets.",
             ),
-            "Moderate Exercise": (
+            "Moderate activity": (
                 "🟡 Caution",
-                "Balanced state, can trade cautiously with discipline.",
+                "Balanced state; trade cautiously with discipline, avoid overconfidence.",
             ),
-            "Good Exercise": (
+            "High activity": (
                 "🟢 Optimal",
-                "Peak focus, strong discipline, reduced stress — ideal trading state.",
+                "Peak focus, strong discipline, and endurance — ideal trading state.",
             ),
         },
     }
 
-    # --- Trading guidance per alert ---
+    # --- Trading guidance updated ---
     trading_guidance = {
-        "🟢 Optimal": "Conditions are favorable; trade normally within risk rules.",
-        "🟡 Caution": "Conditions are decent; reduce position size slightly.",
-        "🟠 Moderate Risk": "Conditions are mixed; reduce trade frequency and size.",
-        "🟠 Elevated Risk": "Conditions are imbalanced; limit trades, be defensive.",
-        "🔴 High Risk": "Avoid trading; risk of errors and emotional decisions is high.",
+        "🟢 Optimal": "Conditions are excellent — trade normally within your risk rules.",
+        "🟡 Caution": "Conditions are decent — reduce position size slightly and monitor stamina.",
+        "🟠 Moderate Risk": "Conditions are mixed — reduce trade frequency and size; stay defensive.",
+        "🟠 Elevated Risk": "Conditions are imbalanced — fitness helps, but lack of rest makes errors likely.",
+        "🔴 High Risk": "Avoid trading — high probability of emotional or impulsive mistakes.",
     }
 
-    # Final factor = average of sleep & exercise, bounded [0.2, 1.0]
-    f = max(0.2, min(1.0, (s + e) / 2))
+    # --- Exponential penalty fusion ---
+    def fuse_exp_penalty() -> float:
+        # Deficits normalized: 0 = no deficit, 1 = serious deficit
+        ds = max(0.0, min(1.0, (6.0 - sleep_hours) / 2.0))
+        de = max(0.0, min(1.0, (40.0 - exercise_minutes) / 20.0))
+        w_s, w_e = 0.95, 0.05
+        alpha = 3.0
+        score = math.exp(-alpha * (w_s * ds + w_e * de))
+        return 0.2 + 0.8 * score
 
+    f = fuse_exp_penalty()
+
+    # --- Lookup alert/guidance ---
     try:
         alert, description = risk_matrix[sleep_level][exercise_level]
         guidance = trading_guidance.get(alert, "")
@@ -102,7 +123,7 @@ def health_factor(sleep_hours: float, exercise_minutes: int) -> tuple[float, str
 
     return (
         f,
-        f"{alert} | {description} (sleep={s_note}, exercise={e_note}, risk scale x{f:.2f})",
+        f"{description} (sleep={sleep_level}, exercise={exercise_level}, risk scale x{f:.2f})",
         alert,
         guidance,
     )
@@ -114,11 +135,11 @@ def compute_dynamic_bankroll(
     """
     Compute bankroll (amount, pct of total_value).
     - Start from BANKROLL_BASE_PCT
-    - Optionally scale by health factor
+    - Optionally scale by your_psychology factor
     - Clamp to [BANKROLL_MIN_PCT, BANKROLL_MAX_PCT]
     """
     pct = BANKROLL_BASE_PCT
-    if BANKROLL_HEALTH_SCALE:
+    if BANKROLL_your_psychology_SCALE:
         pct = pct * h_factor
     # pct = max(BANKROLL_MIN_PCT, min(BANKROLL_MAX_PCT, pct))
     amount = total_value * pct

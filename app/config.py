@@ -24,7 +24,7 @@ def get_env_float(name: str, default: float = 1) -> float:
     return float(v)
 
 
-BANKROLL_HEALTH_SCALE = _get_bool("BANKROLL_HEALTH_SCALE")
+BANKROLL_your_psychology_SCALE = _get_bool("BANKROLL_your_psychology_SCALE")
 BANKROLL_BASE_PCT = get_env_float("BANKROLL_BASE_PCT")
 risk_per_trade_pct = get_env_float("risk_per_trade_pct")
 stop_loss_pct = get_env_float("stop_loss_pct")

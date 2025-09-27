@@ -16,7 +16,7 @@ class ScanInput(BaseModel):
     # stop_loss_pct: Optional[float] = Field(None, gt=0.0, le=0.005)
 
 
-class HealthBlock(BaseModel):
+class your_psychologyBlock(BaseModel):
     sleep_hours: float
     exercise_minutes: int
     factor: float
@@ -48,7 +48,7 @@ class ScanOutput(BaseModel):
     record_id: Optional[int] = None
     symbol: str
     timestamp_utc: str
-    health: HealthBlock
+    your_psychology: your_psychologyBlock
     bankroll: BankrollBlock
     risk: RiskBlock
     position: PositionBlock
