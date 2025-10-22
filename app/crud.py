@@ -11,9 +11,7 @@ def create_scan(db: Session, rec: ScanRecord) -> ScanRecord:
     return rec
 
 
-def list_scans(
-    db: Session, limit: int = 50, offset: int = 0, symbol: Optional[str] = None
-) -> List[ScanRecord]:
+def list_scans(db: Session, limit: int = 50, offset: int = 0, symbol: Optional[str] = None) -> List[ScanRecord]:
     q = db.query(ScanRecord).order_by(ScanRecord.id.desc())
     if symbol:
         q = q.filter(ScanRecord.symbol == symbol.upper())

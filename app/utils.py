@@ -2,10 +2,7 @@ from __future__ import annotations
 from typing import Optional
 import math
 import numpy as np
-from .config import (
-    BANKROLL_BASE_PCT,
-    BANKROLL_your_psychology_SCALE,
-)
+from .config import BANKROLL_BASE_PCT, BANKROLL_your_psychology_SCALE
 
 try:
     import yfinance as yf  # type: ignore
@@ -16,9 +13,7 @@ except Exception:
 
 
 # --- your_psychology & bankroll ---
-def your_psychology_score(
-    sleep_hours: float, exercise_minutes: int
-) -> tuple[float, str, str, str]:
+def your_psychology_score(sleep_hours: float, exercise_minutes: int) -> tuple[float, str, str, str]:
     """
     Compute risk factor using exponential penalty on deficits from targets.
 
@@ -64,32 +59,20 @@ def your_psychology_score(
             ),
         },
         "Light rest": {
-            "Inactive": (
-                "🔴 High Risk",
-                "Partial rest + inactivity → sluggish responses, reactive decision-making.",
-            ),
+            "Inactive": ("🔴 High Risk", "Partial rest + inactivity → sluggish responses, reactive decision-making."),
             "Moderate activity": (
                 "🟠 Moderate Risk",
                 "Fair balance, but not peak performance — reduce trade size and frequency.",
             ),
-            "High activity": (
-                "🟡 Caution",
-                "Reasonable discipline, but endurance may fade in longer sessions.",
-            ),
+            "High activity": ("🟡 Caution", "Reasonable discipline, but endurance may fade in longer sessions."),
         },
         "Well-rested": {
-            "Inactive": (
-                "🟠 Moderate Risk",
-                "Mind is sharp, but low fitness = reduced stamina in volatile markets.",
-            ),
+            "Inactive": ("🟠 Moderate Risk", "Mind is sharp, but low fitness = reduced stamina in volatile markets."),
             "Moderate activity": (
                 "🟡 Caution",
                 "Balanced state; trade cautiously with discipline, avoid overconfidence.",
             ),
-            "High activity": (
-                "🟢 Optimal",
-                "Peak focus, strong discipline, and endurance — ideal trading state.",
-            ),
+            "High activity": ("🟢 Optimal", "Peak focus, strong discipline, and endurance — ideal trading state."),
         },
     }
 
@@ -121,17 +104,10 @@ def your_psychology_score(
     except KeyError:
         alert, description, guidance = "❓", "Unexpected combination.", ""
 
-    return (
-        f,
-        f"{description} (sleep={sleep_level}, exercise={exercise_level}, risk scale x{f:.2f})",
-        alert,
-        guidance,
-    )
+    return (f, f"{description} (sleep={sleep_level}, exercise={exercise_level}, risk scale x{f:.2f})", alert, guidance)
 
 
-def compute_dynamic_bankroll(
-    total_value: float, h_factor: float
-) -> tuple[float, float]:
+def compute_dynamic_bankroll(total_value: float, h_factor: float) -> tuple[float, float]:
     """
     Compute bankroll (amount, pct of total_value).
     - Start from BANKROLL_BASE_PCT
@@ -149,9 +125,7 @@ def compute_dynamic_bankroll(
 # --- Market data & ATR ---
 
 
-def fetch_price_and_atr(
-    symbol: str, lookback: int
-) -> tuple[Optional[float], Optional[float]]:
+def fetch_price_and_atr(symbol: str, lookback: int) -> tuple[Optional[float], Optional[float]]:
     if not _HAS_YF:
         return None, None
     try:
@@ -163,10 +137,7 @@ def fetch_price_and_atr(
         closes = hist["Close"].to_numpy()
         prev_close = np.roll(closes, 1)
         prev_close[0] = closes[0]
-        tr = np.maximum(
-            highs - lows,
-            np.maximum(np.abs(highs - prev_close), np.abs(lows - prev_close)),
-        )
+        tr = np.maximum(highs - lows, np.maximum(np.abs(highs - prev_close), np.abs(lows - prev_close)))
         if len(tr) < lookback:
             return float(closes[-1]), None
         atr = float(np.mean(tr[-lookback:]))

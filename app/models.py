@@ -9,9 +9,7 @@ class ScanRecord(Base):
     __tablename__ = "scan_records"
 
     id: Mapped[int] = Column(Integer, primary_key=True, index=True)
-    created_at: Mapped[datetime] = Column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
-    )
+    created_at: Mapped[datetime] = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # inputs
     symbol: Mapped[str] = Column(String, index=True)

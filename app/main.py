@@ -6,22 +6,11 @@ from fastapi import FastAPI, Depends, HTTPException, Query
 
 from .database import Base, engine, get_db
 from .models import ScanRecord
-from .schemas import (
-    ScanInput,
-    ScanOutput,
-    your_psychologyBlock,
-    BankrollBlock,
-    RiskBlock,
-    PositionBlock,
-    ScanRow,
-)
+from .schemas import ScanInput, ScanOutput, your_psychologyBlock, BankrollBlock, RiskBlock, PositionBlock, ScanRow
 from .utils import your_psychology_score, compute_dynamic_bankroll, fetch_price_and_atr
 from . import crud
 
-from .config import (
-    risk_per_trade_pct,
-    stop_loss_pct,
-)
+from .config import risk_per_trade_pct, stop_loss_pct
 
 app = FastAPI(title="Morning TradeFit Scan API", version="4.0.0")
 Base.metadata.create_all(bind=engine)
@@ -32,12 +21,7 @@ def root():
     return {
         "name": "Morning TradeFit Scan API",
         "version": "4.0.0",
-        "endpoints": [
-            "GET /your_psychology",
-            "POST /scan",
-            "GET /scans",
-            "GET /scans/{scan_id}",
-        ],
+        "endpoints": ["GET /your_psychology", "POST /scan", "GET /scans", "GET /scans/{scan_id}"],
         "docs": "/docs",
     }
 
@@ -50,16 +34,12 @@ def liveness():
 @app.post("/scan", response_model=ScanOutput)
 def scan(payload: ScanInput, db=Depends(get_db)):
     # your_psychology adjustment
-    h_factor, h_note, h_alert, h_guidance = your_psychology_score(
-        payload.sleep_hours, payload.exercise_minutes
-    )
+    h_factor, h_note, h_alert, h_guidance = your_psychology_score(payload.sleep_hours, payload.exercise_minutes)
 
     # Compute bankroll automatically
     bankroll_amt, bankroll_pct = compute_dynamic_bankroll(payload.total_value, h_factor)
     if bankroll_amt <= 0:
-        raise HTTPException(
-            status_code=400, detail="Computed bankroll is zero. Check inputs."
-        )
+        raise HTTPException(status_code=400, detail="Computed bankroll is zero. Check inputs.")
 
     # Risk per trade in $
     # risk_per_trade_pct = 0.01
@@ -121,9 +101,7 @@ def scan(payload: ScanInput, db=Depends(get_db)):
             guidance=rec.EmotionalShield_psychology_recommendation,
         ),
         bankroll=BankrollBlock(
-            mode=rec.bankroll_mode,
-            amount=round(rec.bankroll_amount, 2),
-            pct_of_total=round(rec.bankroll_pct, 4),
+            mode=rec.bankroll_mode, amount=round(rec.bankroll_amount, 2), pct_of_total=round(rec.bankroll_pct, 4)
         ),
         risk=RiskBlock(
             risk_per_trade_pct=round(rec.risk_per_trade_pct, 4),
@@ -132,9 +110,7 @@ def scan(payload: ScanInput, db=Depends(get_db)):
         ),
         position=PositionBlock(
             entry_price=round(rec.entry_price, 4) if rec.entry_price else None,
-            normal_pos_size=(
-                round(rec.normal_pos_size, 4) if rec.normal_pos_size else None
-            ),
+            normal_pos_size=(round(rec.normal_pos_size, 4) if rec.normal_pos_size else None),
             stop_loss_at=(round(rec.stop_loss_at, 4) if rec.stop_loss_at else None),
             risk_per_share=round(rec.risk_per_share, 4) if rec.risk_per_share else None,
         ),
@@ -143,9 +119,7 @@ def scan(payload: ScanInput, db=Depends(get_db)):
 
 
 @app.get("/scans", response_model=List[ScanRow])
-def list_scans(
-    limit: int = 50, offset: int = 0, symbol: Optional[str] = None, db=Depends(get_db)
-):
+def list_scans(limit: int = 50, offset: int = 0, symbol: Optional[str] = None, db=Depends(get_db)):
     rows = crud.list_scans(db, limit=limit, offset=offset, symbol=symbol)
     return [
         ScanRow(
@@ -167,11 +141,11 @@ def get_scan(scan_id: int, db=Depends(get_db)):
     return {
         "id": r.id,
         "created_at": r.created_at,
-        "symbol": r.symbol,
         "inputs": {
             "total_value": r.total_value,
             "sleep_hours": r.sleep_hours,
             "exercise_minutes": r.exercise_minutes,
+            "symbol": r.symbol,
         },
         "computed": {
             "risk_per_trade_pct": r.risk_per_trade_pct,
