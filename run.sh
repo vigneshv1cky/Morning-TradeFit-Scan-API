@@ -47,3 +47,4 @@ BANNER
 
 echo "Starting FastAPI app on $HOST:$PORT..."
 uvicorn "$APP_MODULE" --reload --host "$HOST" --port "$PORT"
+# python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
