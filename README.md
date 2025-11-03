@@ -1,15 +1,10 @@
-# Morning TradeFit Scan API
+# EmotionalShieldAI API
 
-Morning TradeFit Scan API is a FastAPI-based backend application designed to provide emotional well-being support and analysis. It leverages modern Python libraries and a SQLite database to manage and process user data securely and efficiently.
+FastAPI service that computes trading risk guidance from sleep/exercise inputs, sizes positions using bankroll policy, and persists scans to SQLite. Includes optional price/ATR lookup via `yfinance`.
 
-## Features
+---
 
-- RESTful API built with FastAPI
-- SQLite database integration
-- Modular code structure (CRUD, models, schemas, utils)
-- Docker Compose support for easy deployment
-
-## Project Structure
+## 1) Project structure (key files)
 
 ```
 
@@ -44,59 +39,108 @@ EmotionalShieldAI/
 
 ```
 
-## Getting Started
+> **Important:** The app calls `load_dotenv(dotenv_path=".env")`, so **run from the project root** where the `.env` file lives.
 
-### Prerequisites
+---
 
-- Python 3.13+
-- [pip](https://pip.pypa.io/en/stable/)
-- (Optional) [Docker](https://www.docker.com/)
+## 2) Requirements
 
-### Setup (Local)
+* Python 3.10+ (recommended)
+* SQLite (bundled with Python)
 
-1. **Clone the repository:**
+---
 
-   ```bash
-   git clone https://github.com/vigneshv1cky/EmotionalShieldAI.git
-   cd EmotionalShieldAI
-   ```
+## 3) Setup
 
-2. **Run the application using the provided script:**
+### Mac/Linux (bash or zsh)
 
-   ```bash
-   ./run.sh
-   ```
+```bash
+# 1) Clone / unzip the project, then cd into the project root
+cd EmotionalShieldAI
 
-   - The script will automatically create a virtual environment (if not present), install dependencies, and start the FastAPI server.
+# 2) Create & activate a virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
-3. **Access the API docs:**
-   - Open [http://localhost:8000/docs](http://localhost:8000/docs) in your browser.
+# 3) Install dependencies
+pip install -r requirements.txt
 
-### Setup (Docker)
+# 4) Create .env (see template below)
+cp .env.example .env  # if present, else create manually
+```
 
-1. **Build and run with Docker Compose:**
+### Windows (PowerShell)
 
-   ```bash
-   docker compose up --build
-   ```
+```powershell
+# 1) cd into the project root
+cd EmotionalShieldAI
 
-## API Documentation
+# 2) Create & activate a virtual environment
+python -m venv venv
+venv\Scripts\Activate
 
-Interactive API documentation is available at `/docs` (Swagger UI) and `/redoc` (ReDoc) when the server is running.
+# 3) Install dependencies
+pip install -r requirements.txt
 
-## Database
+# 4) Create .env (see template below)
+ni .env  # creates an empty .env; then edit it
+```
 
-- Default database: `tradefit.db` (SQLite)
-- Database models and CRUD operations are defined in `app/models.py` and `app/crud.py`.
+---
 
-## Testing
+## 4) Environment variables (.env)
 
-- Use tools like [Postman](https://www.postman.com/) or the included `TradeFit.postman_collection.json` to test API endpoints.
+**Create a `.env` file in the project root**. Safe defaults are strongly recommended. Example:
 
-## Contributing
+```ini
+# Database
+DATABASE_URL=sqlite:///tradefit.db
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+# Bankroll policy
+# Fraction of total account used as bankroll (0.25 = 25%)
+BANKROLL_BASE_PCT=0.25
+# Whether to scale bankroll by the health/psychology factor
+BANKROLL_your_psychology_SCALE=true
 
-## License
+# Risk policy (as fractions 0..1)
+# Portion of bankroll risked per trade (e.g., 0.01 = 1%)
+risk_per_trade_pct=0.01
+# Stop loss size relative to entry (e.g., 0.01 = 1%)
+stop_loss_pct=0.01
+```
 
-[MIT](LICENSE)
+> **Why this matters:** If `.env` is missing or variables are unset, earlier versions defaulted to `1.0` for some settings, which can cause invalid outputs (e.g., `stop_loss_at = 0.0`). Always provide sane values here.
+
+---
+
+## 5) Run the API
+
+### Start the server (development)
+
+```bash
+# From project root, with venv active
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Open docs at: `http://localhost:8000/docs`
+
+> On Windows, if `uvicorn` isn’t found, try `python -m uvicorn app.main:app --reload`.
+
+---
+
+## 6) Database
+
+* Default DB is SQLite at `tradefit.db` in the project root.
+* Tables are auto-created by `Base.metadata.create_all(bind=engine)` on app startup.
+* To change DB (e.g., Postgres), set `DATABASE_URL` accordingly.
+
+**Examples**
+
+* Postgres: `DATABASE_URL=postgresql+psycopg2://user:pass@host:5432/dbname`
+* MySQL: `DATABASE_URL=mysql+pymysql://user:pass@host:3306/dbname`
+
+---
+
+## 7) License
+
+Add your license of choice (MIT/Apache-2.0/etc.).
