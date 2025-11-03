@@ -143,4 +143,4 @@ Open docs at: `http://localhost:8000/docs`
 
 ## 7) License
 
-Add your license of choice (MIT/Apache-2.0/etc.).
+MIT
